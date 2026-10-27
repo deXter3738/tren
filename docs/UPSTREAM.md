@@ -87,6 +87,7 @@ so a new drop from the designer is a `diff -r`. Where that was not possible, the
 
 | File | Patch | Why |
 |---|---|---|
+| `bundle.css` | the Google Fonts `@import` on line 1 removed; a `prefers-reduced-transparency` block appended | The production CSP (`font-src 'self' data:`) blocks Google Fonts, so Inter is self-hosted; and every blurred surface has to go opaque when the phone asks for less transparency. |
 | `StartBar.tsx` | live mode follows the `startedAt` prop; `start()` only calls `onStart` | A session can also start from Home's today row, and the weigh-in sheet can cancel it, so the bar must not decide on its own that a workout is running. |
 | `TabBar.tsx` | optional `ariaLabel` per tab | openGym says "Home, Connection problem" on the Home tab when sync is stuck. |
 | `ActionButton.tsx` | `time` accepts a React node | So openGym's `<Elapsed>` ticker can render inside it. |

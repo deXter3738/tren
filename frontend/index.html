@@ -75,7 +75,11 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
 </head>
-<body>
+<!-- `tr` is the design system's base class (src/ui/tren/bundle.css): Inter at 16/24 with Tren's
+     letter spacing, border-box everywhere, and the 2px keyboard focus ring. It belongs on the
+     element every Tren component sits under, which is all of them. The inline script above is
+     allowed by its sha256 in web/Dockerfile's CSP — never edit it without that hash. -->
+<body class="tr">
 <!-- The boot screen: painted with the HTML, before any script runs, so the gap between the
      native splash and the first real screen is the logo loading its plates instead of a black
      page. Same dark and lime as the native splash. lib/boot.js takes it away the moment the

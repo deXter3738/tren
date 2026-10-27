@@ -18,6 +18,9 @@ import './tren/tokens.css'
 import './tren/fonts.css'
 import './tren/bridge.css'
 import './tren/type.css'
+// The design system's own component styles (`tr-` classes). index.html gives <body> the `.tr`
+// class so its base — Inter at 16/24, the focus ring, border-box — reaches the whole app.
+import './ui/tren/bundle.css'
 import { hideBoot, handOverFromLaunchScreen } from './lib/boot.js'
 
 // App.jsx restores per-route scroll itself; the browser's own attempt races it.
