@@ -1,7 +1,10 @@
 // @vitest-environment happy-dom
-// The tab bar is fixed on screen and re-renders on every store write — once a second for the
-// whole of a rest. Its buttons must survive that: a component declared inside the render body is
-// a new function each time, which React reads as a different type and rebuilds from scratch.
+// Tren's bottom bar: three tabs, a round button, and on Home the StartBar that morphs into the
+// workout pill and then into the live bar.
+//
+// The bar is fixed on screen and re-renders on every store write — once a second for the whole of
+// a rest — so the first thing checked here is still openGym's original worry: its buttons have to
+// survive that, which they only do while every component it renders is declared at module scope.
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -35,13 +38,19 @@ afterEach(() => {
   where.loc = { pathname: '/home' }
 })
 
-const tabs = () => [...host.querySelectorAll('#tabbar button')]
+const mount = () => act(() => { root.render(<TabBar onStart={() => {}} />) })
+const tabs = () => [...host.querySelectorAll('#tabbar [role="tab"]')]
+const labels = () => tabs().map(b => b.textContent)
+const lit = () => tabs().filter(b => b.getAttribute('aria-selected') === 'true').map(b => b.textContent)
+const action = () => host.querySelector('#tabbar .tr-action')
+const live = () => host.querySelector('#tabbar [role="timer"]')
+const session = extra => ({ id: 'a', name: 'Push', entries: [], cur: 0, ...extra })
 
-describe('the tab bar across a store write', () => {
-  it('keeps the very same buttons instead of rebuilding them every tick', () => {
-    act(() => { root.render(<TabBar onStart={() => {}} />) })
+describe('the bar across a store write', () => {
+  it('keeps the very same tabs instead of rebuilding them every tick', () => {
+    mount()
     const before = tabs()
-    expect(before).toHaveLength(5)
+    expect(before).toHaveLength(3)
 
     // What a rest does once a second: S is replaced, so everything reading it re-renders.
     act(() => { useStore.getState().update(s => { s.restSec = 91 }, false) })
@@ -50,28 +59,52 @@ describe('the tab bar across a store write', () => {
     expect(after).toHaveLength(before.length)
     after.forEach((el, i) => expect(el).toBe(before[i]))
   })
+})
 
-  it('still lights the tab for the route it is on, and follows a change of state', () => {
-    act(() => { root.render(<TabBar onStart={() => {}} />) })
-    expect(tabs()[0].className).toBe('on')
-    expect(tabs()[1].className).toBe('')
-    expect(tabs()[2].className).toBe('start')
+describe('the three tabs', () => {
+  it('are Home, Routines and History, in that order', () => {
+    mount()
+    expect(labels()).toEqual(['Home', 'Routines', 'History'])
+    expect(lit()).toEqual(['Home'])
+  })
 
-    act(() => { useStore.getState().update(s => { s.active = { id: 'a', entries: [], cur: 0 } }, false) })
-    expect(tabs()[2].className).toBe('start rec')
-    expect(tabs()[0].className).toBe('on')
+  // A screen without a tab of its own lights the tab it is opened from, the way its back button
+  // goes. Stats and the Exercise library are hidden in v0.1 but their deep links keep working,
+  // so they still light a tab rather than leaving the bar blank.
+  it.each([
+    ['/home', 'Home'], ['/settings', 'Home'], ['/settings/units', 'Home'], ['/checkin', 'Home'],
+    ['/plan', 'Routines'], ['/plan/r/one', 'Routines'], ['/library', 'Routines'], ['/muscles', 'Routines'],
+    ['/history', 'History'], ['/stats', 'History'], ['/structural-balance', 'History'],
+    ['/progress-photos', 'History'], ['/measurements', 'History'],
+  ])('%s lights %s', (pathname, tab) => {
+    where.loc = { pathname }
+    mount()
+    expect(lit()).toEqual([tab])
+  })
+
+  it('Muscles opened from Stats lights History, the tab Stats falls under', () => {
+    where.loc = { pathname: '/muscles', state: { from: '/stats' } }
+    mount()
+    expect(lit()).toEqual(['History'])
+  })
+
+  // The admin dashboard belongs to no tab. Lighting one would say it does.
+  it('lights nothing on a screen that belongs to no tab', () => {
+    where.loc = { pathname: '/admin' }
+    mount()
+    expect(lit()).toEqual([])
   })
 })
 
 // Settings → "Show connection status" off (#369, #330): a stuck sync shows as a dot on Home, the
-// tab Settings opens from, and the tab's name says it.
+// tab Settings opens from, and the tab's name says it, because a dot alone is colour-only meaning.
 describe('the connection dot on Home', () => {
   const home = () => tabs()[0]
   it('is there for a sync problem only while the banner is switched off', () => {
     const original = useStore.getState().sync
     try {
       useStore.setState({ sync: { status: 'error', lastError: { status: 502 }, pending: true } })
-      act(() => { root.render(<TabBar onStart={() => {}} />) })
+      mount()
       expect(home().querySelector('.tab-dot')).toBeNull()
       act(() => { useStore.getState().update(s => { s.connStatus = false }, false) })
       expect(home().querySelector('.tab-dot')).not.toBeNull()
@@ -83,57 +116,75 @@ describe('the connection dot on Home', () => {
   })
 })
 
-// v1.3.11 icon sweep: one icon per concept. Every tab carries its name under the icon, Start is a
-// play button whether or not a session runs, and Exercises is the dumbbell (no more generic list).
-describe('the tab icons and labels', () => {
-  const icon = el => el.querySelector('svg')?.getAttribute('data-icon')
-  const label = el => el.querySelector('span:last-child').textContent
-  it('labels every tab and uses one icon per concept', () => {
-    act(() => { root.render(<TabBar onStart={() => {}} />) })
-    expect(tabs().map(icon)).toEqual(['house', 'calendar', 'play', 'chart', 'dumbbell'])
-    expect(tabs().map(label)).toEqual(['Home', 'Plan', 'Start', 'Stats', 'Exercises'])
+describe('the round button away from Home', () => {
+  beforeEach(() => { where.loc = { pathname: '/plan' } })
 
-    act(() => { useStore.getState().update(s => { s.active = { id: 'a', entries: [], cur: 0 } }, false) })
-    expect(icon(tabs()[2])).toBe('play')
-    expect(label(tabs()[2])).toBe('Resume')
+  // Owner, 28 Oct 2026: one tap starts today's routine. Choosing a different one happens on Home,
+  // in the pill. A rest day has no routine to name, so the button offers an empty workout.
+  it('names today’s routine, and says so in full', () => {
+    act(() => {
+      useStore.getState().update(s => {
+        s.routines = [{ id: 'r1', name: 'Push', ex: [{ id: 'x', sets: 3, reps: 10, mode: 'reps' }] }]
+        s.week = { 0: ['r1'], 1: ['r1'], 2: ['r1'], 3: ['r1'], 4: ['r1'], 5: ['r1'], 6: ['r1'] }
+      }, false)
+    })
+    mount()
+    expect(action().getAttribute('aria-label')).toMatch(/^Start Push workout, 3 sets, about \d+ minutes$/)
   })
 
-  it('shows a minimized session’s running time, still named Resume', () => {
+  it('offers an empty workout on a rest day', () => {
+    mount()
+    expect(action().getAttribute('aria-label')).toBe('Start an empty workout')
+  })
+
+  it('becomes the running clock, named Resume, while a session is away', () => {
     vi.useFakeTimers()
     try {
       vi.setSystemTime(new Date(2026, 9, 5, 18, 0, 0))
-      act(() => { useStore.getState().update(s => { s.active = { id: 'a', entries: [], cur: 0, start: Date.now() - 754_000 } }, false) })
-      act(() => { root.render(<TabBar onStart={() => {}} />) })
-      const start = tabs()[2]
-      expect(label(start)).toBe('12:34')
-      expect(start.getAttribute('aria-label')).toBe('Resume')
+      act(() => { useStore.getState().update(s => { s.active = session({ start: Date.now() - 754_000 }) }, false) })
+      mount()
+      const button = action()
+      expect(button.getAttribute('aria-label')).toBe('Resume')
+      expect(button.textContent).toBe('12:34')
       act(() => { vi.advanceTimersByTime(2000) })
-      expect(label(start)).toBe('12:36')
-      expect(tabs()[2]).toBe(start)   // the same button, only its text ticks
+      expect(button.textContent).toBe('12:36')
+      expect(action()).toBe(button)   // the same button, only its text ticks
 
-      // a past workout being edited has no clock running
+      // A past workout being edited has no clock running, and is not a session to resume.
       act(() => { useStore.getState().update(s => { s.active.editingWorkoutId = 'w1' }, false) })
-      expect(label(tabs()[2])).toBe('Edit workout')
+      expect(action().getAttribute('aria-label')).toBe('Edit workout')
     } finally { vi.useRealTimers() }
   })
 })
 
-// A screen without a tab of its own keeps the tab it was opened from lit. Check-in, Progress photos
-// and Body measurements lit none: Measurements moved under Stats (75a3b750) and the bar never heard.
-describe('the tab a screen without its own lights', () => {
-  const lit = () => tabs().filter(b => b.classList.contains('on')).map(b => b.textContent)
-  it.each([
-    ['/history', 'Stats'], ['/structural-balance', 'Stats'], ['/progress-photos', 'Stats'], ['/measurements', 'Stats'],
-    ['/settings', 'Home'], ['/settings/units', 'Home'], ['/checkin', 'Home'], ['/muscles', 'Exercises'],
-  ])('%s lights %s', (pathname, tab) => {
-    where.loc = { pathname }
-    act(() => { root.render(<TabBar onStart={() => {}} />) })
-    expect(lit()).toEqual([tab])
+describe('the live bar on Home', () => {
+  it('shows the running session, its time and the set you are on', () => {
+    vi.useFakeTimers()
+    try {
+      vi.setSystemTime(new Date(2026, 9, 5, 18, 0, 0))
+      act(() => {
+        useStore.getState().update(s => {
+          s.active = session({
+            start: Date.now() - 754_000,
+            entries: [{ id: 'x', target: { mode: 'reps' }, sets: [{ w: 60, r: 8, done: true }, { w: 60, r: 8, done: false }, { w: 60, r: 8, done: false }] }],
+          })
+        }, false)
+      })
+      mount()
+      const bar = live()
+      expect(bar).not.toBeNull()
+      expect(bar.textContent).toContain('Push · 12:34')
+      expect(bar.textContent).toContain('Set 2 of 3')
+      // The tabs are still there behind it: the bar morphs, it is not replaced.
+      expect(labels()).toEqual(['Home', 'Routines', 'History'])
+    } finally { vi.useRealTimers() }
   })
 
-  it('Muscles opened from Stats lights Stats, the way its back button goes', () => {
-    where.loc = { pathname: '/muscles', state: { from: '/stats' } }
-    act(() => { root.render(<TabBar onStart={() => {}} />) })
-    expect(lit()).toEqual(['Stats'])
+  it('goes back to the tabs when the session ends', () => {
+    act(() => { useStore.getState().update(s => { s.active = session({ start: Date.now() - 1000 }) }, false) })
+    mount()
+    expect(live().className).toContain('is-on')
+    act(() => { useStore.getState().update(s => { s.active = null }, false) })
+    expect(live().className).toContain('is-off')
   })
 })

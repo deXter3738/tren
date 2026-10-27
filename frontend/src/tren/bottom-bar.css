@@ -1,0 +1,108 @@
+/* The bottom bar.
+   -----------------------------------------------------------------------------------------------
+   #tabbar is the fixed shell: it is the whole strip across the bottom of the screen. Inside it
+   the design system draws the parts — the glass tab bar, the round button, the morphing start
+   bar — and none of that is restated here. What is here is the shell: where it sits, how wide the
+   content is, and the blur that lifts it off the page.
+
+   The id is openGym's and stays: views/Workout.jsx measures #tabbar to work out whether a set row
+   is clear of it, and index.css's `body.no-tabbar` rules key off the same name. index.css's own
+   #tabbar rules are gone — see the note there.
+
+   No env(). --sab is index.css's max() of env(safe-area-inset-bottom) and what the Android shell
+   reports, and src/lib/android-system-bars.test.js keeps env() in that one file.
+   No color-mix(). Safari 15.5 has none (src/color-mix-fallback.test.js). */
+
+#tabbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  /* 16 above, 24 either side, 16 below plus whatever the phone's gesture bar needs. With the
+     56px controls that makes the strip 88px tall, which is exactly the bottom reserve #app
+     already keeps (index.css). */
+  padding: var(--space-4) var(--space-6) calc(var(--space-4) + var(--sab));
+}
+
+/* The StartBar owns its whole row: the tab bar, the round button and the gap between them are all
+   inside it, and it positions them itself. */
+#tabbar > .tr-startbar { flex: 1 1 auto; min-width: 0; }
+#tabbar > .tr-tabbar { flex: 1 1 auto; min-width: 0; }
+
+/* ---- progressive blur -------------------------------------------------------------------- */
+/* One blurred pane with a hard top edge looks like a sheet of glass lying on the page. Six panes
+   do something else: each is blurrier than the one above it and each is masked to its own band,
+   with the bands overlapping so there is no seam between them. The page therefore dissolves into
+   the bar — barely touched where the strip begins, completely gone by the time it reaches the
+   bottom of the screen — and the whole thing takes a wash of --glass that deepens the same way.
+
+   It is one element behind everything, not a backdrop on the bar itself, so the design system's
+   glass tab bar keeps its own blur and its bright rim on top of it.
+
+   The masks run `to bottom`, so 0% is the top of the strip. Band n covers roughly
+   [12.5(n-1), 12.5(n+1)]%, which is why consecutive blurs overlap rather than meet. */
+.tr-bottombar__blur {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  /* Taller than the bar, so the softest layer starts fading in above it. */
+  top: calc(-1 * var(--space-6));
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(to bottom, transparent 0%, var(--glass) 72%);
+}
+.tr-bottombar__blur > span { position: absolute; inset: 0 }
+.tr-bottombar__blur > span:nth-child(1) { -webkit-backdrop-filter: blur(1px);  backdrop-filter: blur(1px);  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 12.5%, transparent 25%);               mask-image: linear-gradient(to bottom, #000 0%, #000 12.5%, transparent 25%) }
+.tr-bottombar__blur > span:nth-child(2) { -webkit-backdrop-filter: blur(2px);  backdrop-filter: blur(2px);  -webkit-mask-image: linear-gradient(to bottom, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%);   mask-image: linear-gradient(to bottom, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%) }
+.tr-bottombar__blur > span:nth-child(3) { -webkit-backdrop-filter: blur(4px);  backdrop-filter: blur(4px);  -webkit-mask-image: linear-gradient(to bottom, transparent 25%, #000 37.5%, #000 50%, transparent 62.5%);    mask-image: linear-gradient(to bottom, transparent 25%, #000 37.5%, #000 50%, transparent 62.5%) }
+.tr-bottombar__blur > span:nth-child(4) { -webkit-backdrop-filter: blur(8px);  backdrop-filter: blur(8px);  -webkit-mask-image: linear-gradient(to bottom, transparent 37.5%, #000 50%, #000 62.5%, transparent 75%);    mask-image: linear-gradient(to bottom, transparent 37.5%, #000 50%, #000 62.5%, transparent 75%) }
+.tr-bottombar__blur > span:nth-child(5) { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); -webkit-mask-image: linear-gradient(to bottom, transparent 50%, #000 62.5%, #000 75%, transparent 87.5%);    mask-image: linear-gradient(to bottom, transparent 50%, #000 62.5%, #000 75%, transparent 87.5%) }
+.tr-bottombar__blur > span:nth-child(6) { -webkit-backdrop-filter: blur(32px); backdrop-filter: blur(32px); -webkit-mask-image: linear-gradient(to bottom, transparent 62.5%, #000 75%, #000 100%);                      mask-image: linear-gradient(to bottom, transparent 62.5%, #000 75%, #000 100%) }
+
+/* Everything the bar actually shows sits above the blur. */
+#tabbar > :not(.tr-bottombar__blur) { position: relative; z-index: 1 }
+
+/* ---- when the blur cannot or should not run ------------------------------------------------- */
+/* An old Android WebView has no backdrop-filter at all: the masks would leave nothing but a faint
+   wash and the page would scroll straight through the bar. One opaque strip instead, and only
+   behind the bar itself rather than the taller fade. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tr-bottombar__blur { top: 0; background: var(--bg) }
+  .tr-bottombar__blur > span { -webkit-mask-image: none; mask-image: none }
+}
+/* And the setting itself, read directly: a browser that has backdrop-filter keeps the bar
+   see-through unless it is switched off by name here.
+   (src/a11y-contrast-transparency.test.js, "no surface keeps its blur".) */
+@media (prefers-reduced-transparency: reduce) {
+  .tr-bottombar__blur { top: 0; background: var(--bg) }
+  .tr-bottombar__blur > span:nth-child(1),
+  .tr-bottombar__blur > span:nth-child(2),
+  .tr-bottombar__blur > span:nth-child(3),
+  .tr-bottombar__blur > span:nth-child(4),
+  .tr-bottombar__blur > span:nth-child(5),
+  .tr-bottombar__blur > span:nth-child(6) { -webkit-backdrop-filter:none; backdrop-filter:none; -webkit-mask-image: none; mask-image: none }
+}
+
+/* ---- the connection dot ---------------------------------------------------------------------- */
+/* index.css keeps .tab-dot itself (it is also used on the Settings gear). Inside a Tren tab the
+   icon is an <img>, so the dot needs something positioned to hang off. */
+#tabbar .tab-ic { position: relative; display: inline-flex; width: 24px; height: 24px }
+
+/* ---- on a computer ---------------------------------------------------------------------------- */
+/* openGym's own desktop breakpoint (index.css, 1000px). The bar stops being full width and floats, centred, clear of the
+   bottom edge — the same move index.css made, with Tren's numbers. */
+@media (min-width: 1000px) {
+  #tabbar {
+    inset-inline: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: var(--space-4);
+    width: 520px;
+    padding: 0;
+  }
+  /* Floating, there is nothing behind the bar to blur: the page stops above it. */
+  .tr-bottombar__blur { display: none }
+}

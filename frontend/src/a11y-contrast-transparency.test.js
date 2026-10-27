@@ -66,9 +66,10 @@ describe('Reduce Transparency (#708)', () => {
   // Every blurred surface in a sheet has to be listed in that sheet's own
   // prefers-reduced-transparency block, with the blur off. A new frosted bar that forgets it
   // stays see-through for the people who asked for less of exactly that.
-  // ui/tren/bundle.css is Tren's design system: the glass bar and menu, the stat tiles. It
-  // answers the setting in a block of its own, appended to the file the designer ships.
-  it.each(['index.css', 'coach.css', 'ui/tren/bundle.css'])('%s: no surface keeps its blur', (file) => {
+  // Tren's two: ui/tren/bundle.css is the design system (the glass bar and menu, the workout
+  // pill, the stat tiles) and tren/bottom-bar.css is the progressive blur behind the bar. Each
+  // answers the setting in a block of its own.
+  it.each(['index.css', 'coach.css', 'ui/tren/bundle.css', 'tren/bottom-bar.css'])('%s: no surface keeps its blur', (file) => {
     const css = read(file)
     const reduce = block(css, /@media\s*\(prefers-reduced-transparency:\s*reduce\)/)
     const off = [...reduce.matchAll(/([^{}]+)\{[^}]*(?:^|;)\s*backdrop-filter:none/g)]

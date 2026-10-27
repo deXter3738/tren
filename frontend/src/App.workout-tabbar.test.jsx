@@ -49,9 +49,13 @@ it('a running workout has no tab bar and no bottom action; minimized, the tabs a
   expect(host.querySelector('#tabbar')).toBeNull()
   expect(document.body.classList.contains('no-tabbar')).toBe(true)
   await act(async () => host.querySelector('.whdr button[aria-label="Minimize"]').click())
-  expect(host.querySelectorAll('#tabbar button')).toHaveLength(5)
-  expect(host.querySelector('#tabbar .start').getAttribute('aria-label')).toBe('Resume')
-  await act(async () => host.querySelector('#tabbar .start').click())
+  // Minimized on Home, the bar is the StartBar in live mode: three tabs, and the session itself
+  // in the pill with Open at the end of it.
+  expect(host.querySelectorAll('#tabbar [role="tab"]')).toHaveLength(3)
+  const liveBar = host.querySelector('#tabbar [role="timer"]')
+  expect(liveBar.className).toContain('is-on')
+  const open = [...liveBar.querySelectorAll('button')].find(b => b.textContent === 'Open')
+  await act(async () => open.click())
   expect(host.querySelector('#tabbar')).toBeNull()
   expect(useStore.getState().S.active.entries[0].sets.map(s => s.done)).toEqual([false, false])
 })

@@ -1,3 +1,9 @@
+/* TREN PATCH (docs/UPSTREAM.md): the live bar follows the `startedAt` prop instead of deciding
+   for itself. A workout can also begin from Home's today row or from the round button on another
+   screen, and pressing Start here may open the weigh-in sheet, which can be cancelled — so the
+   bar must not switch itself to "running" the moment Start is pressed. `start()` now only calls
+   `onStart`; the app answers by setting `startedAt`, and clearing it ends the live bar.
+   Nothing else here differs from design/design-system/components/src/StartBar.tsx. */
 import React, { useState, useEffect, useRef } from 'react';
 import { cx } from './utils';
 import { Play, Plus, ChevronUpDown, Tick } from './icons';
@@ -35,11 +41,18 @@ export function StartBar({ tabs, selectedTab, onTabChange, routines, routine, on
   const hold = useRef<number | undefined>(undefined);
   const held = useRef(false);
   useEffect(() => { if (!t0) return; const iv = window.setInterval(() => tick((x: number) => x + 1), 1000); return () => window.clearInterval(iv); }, [t0]);
+  // The app owns "a workout is running". When it says so, the bar goes live; when it stops saying
+  // so, the bar comes back to the tabs — but only from live, so someone part-way through choosing
+  // a routine is not thrown back to the tabs under their thumb.
+  useEffect(() => {
+    setT0(startedAt);
+    setMode((m) => (startedAt ? 'live' : m === 'live' ? 'tabs' : m));
+  }, [startedAt]);
   const name = routine ?? own;
   const r = routines.find((x) => x.name === name) ?? routines[0];
   const secs = t0 ? Math.max(0, Math.floor((Date.now() - t0) / 1000)) : 0;
   const pickRoutine = (n: string) => { if (routine == null) setOwn(n); onRoutineChange?.(n); setMenu(false); };
-  const start = () => { const now = Date.now(); setT0(now); setMode('live'); setMenu(false); onStart?.(r.name); };
+  const start = () => { setMenu(false); onStart?.(r.name); };
   const on = (m: string) => (mode === m ? 'is-on' : 'is-off');
   return (
     <div className="tr-startbar">

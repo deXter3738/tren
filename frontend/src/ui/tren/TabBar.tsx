@@ -1,7 +1,18 @@
+/* TREN PATCH (docs/UPSTREAM.md): a tab may carry its own `ariaLabel`. openGym shows a sync
+   problem as a dot on the Home tab and says so out loud — "Home, Connection problem" — and a
+   dot with no words is exactly what the accessibility rules forbid. Nothing else here differs
+   from design/design-system/components/src/TabBar.tsx. */
 import React, { useState } from 'react';
 import { cx } from './utils';
 
-export interface TabItem { id: string; label: string; /** Colourful icon (image URL or element). Shown greyscale when not selected. */ icon: string | React.ReactNode; }
+export interface TabItem {
+  id: string;
+  label: string;
+  /** Colourful icon (image URL or element). Shown greyscale when not selected. */
+  icon: string | React.ReactNode;
+  /** Spoken label, when it has to say more than the visible one ("Home, Connection problem"). */
+  ariaLabel?: string;
+}
 export interface TabBarProps {
   tabs: TabItem[];
   /** Selected tab id. Leave unset to let the bar keep its own state. */
@@ -28,7 +39,7 @@ export function TabBar({ tabs, selected, defaultSelected, onChange, ...rest }: T
         <span className="tr-tabbar__blob tr-tabbar__blob--3" style={{ width: 24, left: `calc(4px + ${idx} * ${col} + (${col} - 24px) / 2)` }} />
       </span>
       {tabs.map((t) => (
-        <button key={t.id} type="button" role="tab" aria-selected={t.id === cur} className="tr-tab" onClick={() => pick(t.id)}>
+        <button key={t.id} type="button" role="tab" aria-selected={t.id === cur} aria-label={t.ariaLabel} className="tr-tab" onClick={() => pick(t.id)}>
           <span className="tr-tab__icon">{typeof t.icon === 'string' ? <img src={t.icon} alt="" width={24} height={24} /> : t.icon}</span>
           {t.label}
         </button>

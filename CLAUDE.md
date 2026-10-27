@@ -42,13 +42,15 @@ docs/UPSTREAM.md            how to merge openGym, and every upstream file Tren h
 2. **CSS tests.** openGym has 28 tests that read `index.css` as text. Leave its token block alone
    apart from the two deleted `--bg` lines. In Tren CSS: no `env()` (use `--sab` / `--sat`) and no
    unguarded `color-mix()`.
-3. **i18n.** New Tren copy is wrapped in `t()` but is **not** added to the 19 locale packs. A key
-   in no pack shows its English text and passes `check-locales.mjs`, so translating later is only
-   a matter of adding keys — and nothing conflicts on a merge. v0.1 ships English.
-4. **TypeScript.** `.tsx` only under `frontend/src/ui/tren/`, byte-identical to
-   `design/design-system/components/src/` so a new drop from the designer is a `diff -r`. Where a
-   patch was unavoidable it carries a `TREN PATCH` comment and a row in `docs/UPSTREAM.md`. There
-   is no type-check step; app code stays plain JS.
+3. **i18n.** **v0.1 is English only** (owner, 28 Oct 2026). New Tren copy still goes through
+   `t()`, so translating later is only a matter of adding keys, but the keys are **not** added to
+   openGym's 19 locale packs: a key in no pack renders its English text, `check-locales.mjs` stays
+   green, and nothing conflicts on an upstream merge. `check-source-strings.mjs` lists those keys
+   in its report (CI runs it report-only); that list is the Tren copy waiting to be translated.
+4. **TypeScript.** `.tsx` only under `frontend/src/ui/tren/`, as close to byte-identical to
+   `design/design-system/components/src/` as the app allows, so a new drop from the designer is a
+   `diff -r`. Three files carry a `TREN PATCH` comment at the top and a row in `docs/UPSTREAM.md`;
+   the rest are untouched. There is no type-check step; app code stays plain JS.
 5. **Media.** The Gym visual 180 px exercise files stay unmodified, the credit line in
    Settings → About stays word for word, and they are never sent to any AI service.
 

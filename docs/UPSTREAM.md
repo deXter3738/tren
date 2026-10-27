@@ -74,6 +74,7 @@ Keep this list complete — it is what makes a merge reviewable.
 | `frontend/index.html` | M2 | `<body class="tr">` |
 | `frontend/src/a11y-contrast-transparency.test.js` | M2, M3 | Tren's stylesheets added to the Reduce Transparency check |
 | `frontend/src/components/TabBar.jsx` | M3 | rewritten as the Tren bottom bar |
+| `frontend/src/lib/native-keyboard.test.js` | M3 | reads `#tabbar` from `tren/bottom-bar.css`, where the rule now lives |
 | `frontend/src/components/TabBar.test.jsx` | M3 | rewritten for the new bar |
 | `frontend/src/components/TabBar.navigation.test.jsx` | M3 | rewritten for the new labels |
 | `frontend/src/App.workout-tabbar.test.jsx` | M3 | button count and selectors |
@@ -97,3 +98,26 @@ so a new drop from the designer is a `diff -r`. Where that was not possible, the
 | Date | Upstream SHA | Notes |
 |---|---|---|
 | 2026-10-28 | `e6a95c28` | Fork point (`tren-base`). |
+
+## Decisions the owner made, so they are not re-litigated
+
+| Date | Question | Answer |
+|---|---|---|
+| 2026-10-28 | `--label-3` has no Tren token | `--ink-muted` when it colours text (4.5:1), `--icon-muted` only for icons. Legacy tints (orange, teal…) keep their interim mapping and retire screen by screen. Yellow is reserved for the effort slider and the training-day glow. |
+| 2026-10-28 | Heading (31px) letter spacing | −0.021em. |
+| 2026-10-28 | Where Stats and the Exercise library are reached from | Nowhere — they are hidden in v0.1. Deep links keep working until the hiding PR. |
+| 2026-10-28 | Round button on Routines and History | Starts today's routine directly, one tap. A rest day starts an empty workout. Choosing a different routine happens on Home, in the pill. |
+| 2026-10-28 | Is v0.1 English only | Yes, English only. Copy still goes through `t()` so translating later is only adding keys. |
+| 2026-10-28 | Increased contrast (`prefers-contrast: more`) | Glass surfaces go solid `--surface-sheet`, `--ink-muted` text becomes `--ink`, `--line` becomes `--ring`. Nothing else changes. |
+| 2026-10-28 | The PRD's fork kit (steps 00–10) | Separate from the design handover; arrives later. The database-size meter and nightly backups stay placeholders until then. |
+
+## Open, still
+
+- **The "~55 min" estimate.** The canvas fixes the wording of the routine line; nothing says how
+  the minutes are worked out. `frontend/src/tren/routine-meta.js` holds a documented guess (45s a
+  set plus the rest timer, rounded to 5 minutes) with a test pinning it down. One number to change
+  when the designer says what it should be.
+- **openGym's seasonal decorations** (the Halloween spider and cobweb on Home) still draw. They are
+  openGym's, not Tren's, and belong with the screens that hide the extra openGym features.
+- **The boot screen and the name.** `frontend/index.html` still shows openGym's dark-and-lime
+  splash and title. That is the branding swap (PRD R13), a later step.

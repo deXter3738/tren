@@ -129,9 +129,14 @@ describe('the two halves agree', () => {
     expect(css).toMatch(/max-height:min\(90vh,calc\(100dvh - var\(--sat\) - 8px - var\(--native-kb,0px\)\)\)/)
   })
 
+  // The bar itself moved to Tren's stylesheet (src/tren/bottom-bar.css); index.css keeps the
+  // #app padding that makes room for it. The claim is unchanged: the bar stays at the bottom of
+  // the window, under the keyboard, rather than riding up on it.
   it('the tab bar is left under the keyboard', () => {
-    const tabbar = css.match(/#tabbar\{[^}]*\}/)[0]
+    const bar = read('../tren/bottom-bar.css')
+    const tabbar = bar.match(/#tabbar \{[^}]*\}/)[0]
     expect(tabbar).not.toMatch(/native-kb/)
+    expect(bar).not.toMatch(/data-native-kb\][^{]*#tabbar/)
     expect(css).not.toMatch(/data-native-kb\][^{]*#tabbar/)
   })
 })
