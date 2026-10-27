@@ -19,7 +19,9 @@
 /* ---------------------------------------------------------------- tokens -- */
 :root {
   /* surfaces — dark is the default */
-  --bg:        #000000;
+  /* --bg is Tren's: src/tren/tokens.css sets it for both themes and src/tren/bridge.css explains
+     why nothing here may re-declare it. Deleting the line here (and its light-theme twin below)
+     is the whole of Tren's change to this token block. */
   --bg-el:     #0e0e10;   /* elevated backdrop (sheets, bars) */
   --surface:   #1c1c1e;   /* card / grouped-list fill */
   --surface-2: #2c2c2e;   /* pressed + nested fill */
@@ -70,7 +72,7 @@
 }
 
 :root[data-theme="light"] {
-  --bg:        #f2f2f7;
+  /* --bg: see the note in :root above. */
   --bg-el:     #f7f7fa;
   --surface:   #ffffff;
   --surface-2: #ececef;

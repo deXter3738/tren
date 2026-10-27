@@ -1,0 +1,31 @@
+/* Inter, self-hosted.
+   -----------------------------------------------------------------------------------------------
+   The design system names Google Fonts; the production image cannot use it. web/Dockerfile's
+   Content-Security-Policy is `font-src 'self' data:`, so a request to fonts.gstatic.com is
+   blocked and every screen falls back to the system font — and `@import` from a stylesheet costs
+   a second round trip before the first paint anyway. One variable file, served from our own
+   origin, gives the same thing offline and in the installed app.
+
+   Version 4.1 of github.com/rsms/inter, the `web/InterVariable.woff2` of that release, byte for
+   byte (sha256 693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3). SIL Open Font
+   License 1.1, copied beside it as fonts/Inter-OFL.txt. Not subset: it carries Cyrillic, which
+   the Russian and Ukrainian packs need, and Greek. 344 KB, fetched once and then cached by the
+   service worker. Upright only — nothing in Tren is italic.
+
+   The url() is relative, so Vite rewrites it to the hashed asset and it keeps working under a
+   sub-path deploy and inside the service worker's precache.
+
+   `font-display: swap` draws the text in system-ui straight away and swaps Inter in when it
+   lands: a slow network delays the typeface, never the workout.
+
+   `opsz` is the optical-size axis: the big numbers (61–95px) automatically get Inter's Display
+   cut, which is tighter and narrower than the text cut. `font-optical-sizing: auto` in bridge.css
+   turns that on; it needs this axis to be present, which is why the variable file is the one we
+   ship rather than the static weights. */
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(./fonts/InterVariable.woff2) format('woff2');
+}

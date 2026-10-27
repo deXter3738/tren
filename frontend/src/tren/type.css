@@ -1,0 +1,25 @@
+/* Tren's type scale as classes.
+   -----------------------------------------------------------------------------------------------
+   tokens.css carries the `font:` shorthands (--text-display-lg … --text-tab-label). A shorthand
+   cannot carry letter-spacing, and in Tren letter spacing is part of the style: it tightens as the
+   size grows, which is what keeps a 95px number from looking gappy and a 13px label from looking
+   cramped. So each step is a class that sets its font and its tracking together, and screens use
+   the class rather than typing numbers.
+
+   Tracking (design/design-system/README.md, with 31px decided by the owner on 28 Oct 2026):
+       13px   0          16px  −0.011em     20px  −0.017em
+       31px  −0.021em    61px and up  −0.022em
+
+   Changing numbers use tabular figures, so a ticking timer or a counting-up weight does not jitter
+   — every digit is the same width. That is on the display and title steps, where the numbers are,
+   and on .tr-num for anything else. */
+
+.tr-display-lg { font: var(--text-display-lg); letter-spacing: -0.022em; font-variant-numeric: tabular-nums; }
+.tr-display-md { font: var(--text-display-md); letter-spacing: -0.022em; font-variant-numeric: tabular-nums; }
+.tr-display-sm { font: var(--text-display-sm); letter-spacing: -0.022em; font-variant-numeric: tabular-nums; }
+.tr-heading    { font: var(--text-heading);    letter-spacing: -0.021em; }
+.tr-title      { font: var(--text-title);      letter-spacing: -0.017em; font-variant-numeric: tabular-nums; }
+.tr-body       { font: var(--text-body);       letter-spacing: -0.011em; }
+.tr-body-strong{ font: var(--text-body-strong);letter-spacing: -0.011em; }
+.tr-caption    { font: var(--text-caption);    letter-spacing: 0; }
+.tr-tab-label  { font: var(--text-tab-label);  letter-spacing: 0.01em; }

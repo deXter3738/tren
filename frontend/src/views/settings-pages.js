@@ -6,7 +6,6 @@
 // by the same text and flash it (views/Settings.jsx). settings-pages.test.jsx renders every page
 // and checks that each entry below really is a row there.
 import { t } from '../lib/i18n.js'
-import { ACCENT_NAMES } from '../lib/format.js'
 
 export const PAGES = {
   workout: { title: 'Workout', icon: 'play', tint: 'var(--green)' },
@@ -121,7 +120,9 @@ export const SEARCH = [
   { page: 'equipment', title: 'Add equipment profile', icon: 'plusCircle', tint: 'var(--green)', kw: 'equipment profile home gym hotel' },
   // Look & Home
   { page: 'look', title: 'Theme', icon: 'moon', tint: 'var(--indigo)', kw: 'dark mode light mode theme appearance night', opts: ['Dark', 'Light', 'System'] },
-  { page: 'look', title: 'Accent color', icon: 'palette', tint: 'var(--purple)', kw: 'color colour accent tint custom own picker hex rgb', opts: [...Object.values(ACCENT_NAMES), 'Your own color'], tkw: () => t('custom color picker') },
+  // No 'Accent color' entry: Tren's training colour is monochrome and the row is gone from the
+  // Look page (views/Settings.jsx). Search has to match what the page actually shows — there is a
+  // test for exactly that (settings-pages.test.jsx, "each search entry is a row on its page").
   { page: 'look', title: 'App icon', icon: 'grid', tint: 'var(--indigo)', kw: 'app icon home screen launcher logo dark light', when: c => !!c.appIcons },
   { page: 'look', title: 'Body diagram', icon: 'figureStrength', tint: 'var(--teal)', kw: 'muscle map body male female', opts: ['Male', 'Female'] },
   { page: 'look', title: 'Exercise drawings', icon: 'figureStrength', tint: 'var(--teal)', kw: 'figure male female woman man picture', opts: ['Male', 'Female'] },

@@ -1,0 +1,123 @@
+/* The bridge: openGym's theme variables, pointed at Tren's tokens.
+   -----------------------------------------------------------------------------------------------
+   openGym has ~2300 lines of stylesheet written against its own variables (--bg, --surface,
+   --label, --acc …). Tren does not rewrite them screen by screen before the screens are
+   redesigned; it re-points them. One file, and every existing screen comes up in Tren's colours
+   and corners, in both themes, the moment it loads. Screens then get their real design one at a
+   time (design/HANDOFF.md's build order), and each one that does drops out of this table.
+
+   WHY THIS SELECTOR. `:root, :root[data-theme]` is two selectors in one rule. The plain `:root`
+   covers a page before App.jsx has written the attribute; `:root[data-theme]` weighs the same as
+   openGym's own `:root[data-theme="light"]` and `:root[data-accent="sky"]` blocks, which is the
+   point — equal weight means source order decides, and this file is imported after index.css, so
+   it wins. A single `:root` would lose to both and the light theme would keep openGym's greys.
+
+   NO color-mix(). The iOS app still runs on Safari 15.5, which has none; src/color-mix-fallback
+   .test.js enforces a fallback for every mixing declaration in every stylesheet under src/. The
+   tints below are flat tokens instead, so the question never arises.
+
+   NO env(). src/lib/android-system-bars.test.js keeps env(safe-area-inset-*) in index.css alone,
+   where it is folded into --sab and --sat together with what the Android shell reports. Use those
+   two, never env() directly. */
+
+:root,
+:root[data-theme] {
+  /* ---- grounds ---------------------------------------------------------------------------- */
+  /* --bg itself is not here: tokens.css owns it, and index.css's two declarations of it were
+     deleted so this stays true in both themes. */
+  --bg-el:     var(--surface-sheet);   /* sheets and bars */
+  --surface:   var(--surface-card);    /* cards and grouped lists */
+  --surface-2: var(--lens-solid);      /* pressed and nested fill */
+  --surface-3: var(--ring);            /* control tracks: segmented, switch off */
+
+  /* ---- text ------------------------------------------------------------------------------- */
+  --label:   var(--ink);
+  --label-2: var(--ink-muted);
+  /* Tren has no tertiary-text token. --label-3 colours text far more often than it colours an
+     icon (.dim, hints, units, weekday labels), and text has to clear 4.5:1, so it takes
+     --ink-muted. Icon-only tints go through --grey below, which is --icon-muted.
+     (Owner, 28 Oct 2026.) */
+  --label-3: var(--ink-muted);
+  --label-4: var(--ring);              /* faint fills, not text */
+
+  /* ---- lines ------------------------------------------------------------------------------ */
+  /* Tren's cards are told apart by tone, never by a border. The card-edge borders in openGym's
+     sheet go as each screen is redesigned; these two keep row hairlines sane until then. */
+  --sep:    var(--line);
+  --sep-op: var(--line);
+
+  /* ---- the accent, which in Tren is not a hue ---------------------------------------------- */
+  /* Training actions are monochrome: near-black on white, near-white on black. App.jsx no longer
+     calls applyAccent, so no [data-accent] block and no inline --acc can get in front of these. */
+  --acc:      var(--train-500);
+  --acc-2:    var(--train-700);
+  --on-acc:   var(--train-ink);
+  --acc-soft: var(--lens);             /* was a color-mix of the accent */
+  --acc-line: var(--ring);             /* ditto */
+
+  /* ---- status and legacy icon tints -------------------------------------------------------- */
+  --blue:  var(--blue-500);            /* rest and recovery */
+  --green: var(--green-500);           /* done, synced */
+  --red:   var(--danger-500);          /* delete, errors, offline */
+  --grey:  var(--icon-muted);
+  /* --orange, --yellow, --teal, --indigo, --pink, --purple, --mint and --brown are deliberately
+     NOT aliased. They tint icons on screens Tren has not redesigned yet and keep openGym's iOS
+     palette until each screen gets Tren's own colourful icons. Tren's yellow is reserved for the
+     effort slider and the faint training-day glow and must not leak anywhere else. */
+
+  /* ---- geometry --------------------------------------------------------------------------- */
+  --r-sm:   var(--radius-sm);          /* 12 — small rows */
+  --r:      var(--radius-sm);          /* 12 */
+  --r-lg:   var(--radius-md);          /* 16 — inputs */
+  --r-card: var(--radius-xl);          /* 24 — cards */
+  --r-xl:   var(--radius-xl);          /* 24 — cards and menus; sheets go to 32 in their own step */
+  --pad:    var(--space-4);            /* 16 — card padding */
+
+  /* --hair, --ease, --fast, --med, --sab, --sat, --conn and --icon-stroke keep openGym's values:
+     they are mechanics, not design tokens. */
+}
+
+/* ---- type ----------------------------------------------------------------------------------- */
+body {
+  font-family: var(--font-sans);
+  /* Lets Inter's variable opsz axis pick the Display cut for the big numbers by itself. */
+  font-optical-sizing: auto;
+}
+
+/* ---- screen margins ------------------------------------------------------------------------- */
+/* Tren's screen margin is 24px (space-6); openGym's page padding is --pad, which is card padding
+   here and has to stay 16. Only the horizontal half is re-stated, so the top inset (status bar +
+   connection bar) and the bottom reserve for the bar are untouched. */
+#app { padding-inline: var(--space-6); }
+
+/* ---- toast -------------------------------------------------------------------------------- */
+/* "One at a time, 16px above the bottom bar" (design/HANDOFF.md). The bar is 56 tall with 16 of
+   padding under it, so its top edge is 72 above the safe area and the toast clears it by 16.
+   body.no-tabbar #toast is more specific and keeps docking the toast to the bottom edge during a
+   workout. */
+#toast { bottom: calc(var(--space-14) + 2 * var(--space-4) + var(--sab)); }
+
+/* ---- keyboard focus ------------------------------------------------------------------------ */
+/* 2px, 3px clear of the edge, shown only to a keyboard (design/HANDOFF.md, Accessibility). */
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* ---- increased contrast --------------------------------------------------------------------- */
+/* iOS/macOS "Increase Contrast" and the other platforms' equivalents. openGym's own
+   prefers-contrast block sets variables this file re-points, so it no longer reaches; this is
+   Tren's answer instead, and it is deliberately small (owner, 28 Oct 2026):
+     · glass goes solid, so text never sits on a see-through surface,
+     · secondary text becomes primary text,
+     · hairlines become the heavier ring colour.
+   Nothing else changes — the layout, the type and the spacing are the same.
+   These are token overrides rather than rules on .tr-glass, so they work whatever order the
+   component stylesheets are imported in: a solid --glass makes the blur behind it invisible. */
+@media (prefers-contrast: more) {
+  :root,
+  :root[data-theme] {
+    --glass:      var(--surface-sheet);
+    --glass-menu: var(--surface-sheet);
+    --frost:      var(--surface-sheet);
+    --ink-muted:  var(--ink);
+    --line:       var(--ring);
+  }
+}

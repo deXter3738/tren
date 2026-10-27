@@ -5,8 +5,6 @@ import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { bindUI } from './components/ui.jsx'
 import { setWeightDecimals } from './lib/format.js'
-import { accentValue, applyAccent } from './lib/accent.js'
-import { seasonAccent } from './lib/seasonal.js'
 import { setLang, useLang, baseLang } from './lib/i18n.js'
 import { effectiveLang } from './lib/default-lang.js'
 import { setPlayOnSilent, setVibrate, setAlarmBuzzer, setNativeBuzzer } from './lib/sound.js'
@@ -97,12 +95,24 @@ const resolveTheme = theme => theme === 'light' || theme === 'dark'
   ? theme
   : (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
 
-function applyPrefs(theme, accent) {
+/* Tren has no accent to apply. Training actions are monochrome — near-black on white, near-white
+   on black — so there is no per-account colour to paint, and lib/accent.js's applyAccent is
+   deliberately not called here: it writes data-accent on <html> and, for a colour of the user's
+   own, inline --acc / --acc-2 / --on-acc, and an inline custom property beats every stylesheet,
+   src/tren/bridge.css included. lib/accent.js itself stays where it is; the native rest alert
+   still colours its countdown from the saved value (lib/rest-alert.js). */
+function applyPrefs(theme) {
   const de = document.documentElement
   de.dataset.theme = resolveTheme(theme)
-  applyAccent(de, accent, de.dataset.theme)
+  // The browser paints the address bar and, on Android, the status bar with this. It used to be
+  // two hard-coded hexes that had to be kept in step with the stylesheet by hand; now it is read
+  // off the page itself, so whatever --bg is after a theme change is what the phone gets. The
+  // literals are only a floor for a browser with no computed style yet (an old WebView, a test).
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f2f7' : '#000000'
+  if (meta) {
+    const bg = getComputedStyle(de).getPropertyValue('--bg').trim()
+    meta.content = bg || (de.dataset.theme === 'light' ? '#FFFFFF' : '#0B0C0E')
+  }
   if (MOBILE) setSystemBarsLight(de.dataset.theme === 'light')
 }
 
@@ -142,21 +152,17 @@ function Shell() {
     navigate('/workout', { replace: true })
     exitWorkoutEdit(() => navigate(destination, { replace: true }))
   }, [loc.pathname, loc.search, S.active?.editingWorkoutId, navigate])
-  // A preset key, or the user's own colour as '#rrggbb' (lib/accent.js), already checked. A
-  // seasonal theme's colours stand in for it while that theme shows, and only when chosen
-  // (Settings → Look & Home → Seasonal themes); the saved accent itself is never touched.
-  const accent = seasonAccent(S) || accentValue(S)
-  useEffect(() => { applyPrefs(S.theme, accent) }, [S.theme, accent])
+  useEffect(() => { applyPrefs(S.theme) }, [S.theme])
   // 'system' needs to react live if the OS theme flips while the app is open, not just on
   // the next mount — a fixed 'dark'/'light' choice never re-fires this since matchMedia
   // isn't consulted for those.
   useEffect(() => {
     if (S.theme !== 'system' || !window.matchMedia) return
     const mql = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => applyPrefs(S.theme, accent)
+    const onChange = () => applyPrefs(S.theme)
     mql.addEventListener('change', onChange)
     return () => mql.removeEventListener('change', onChange)
-  }, [S.theme, accent])
+  }, [S.theme])
   // A profile that never picked a language follows the instance default or the browser (#303) —
   // worked out here, on this device, and never written into the synced state (lib/default-lang.js).
   const config = useStore(s => s.config)

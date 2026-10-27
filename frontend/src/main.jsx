@@ -10,6 +10,14 @@ import { startNativeKeyboard } from './lib/native-keyboard.js'
 import './admin.css'
 import './coach.css'
 import './index.css'
+// Tren, in the order they have to load: the tokens first (they own --bg and every colour),
+// then Inter, then the bridge that points openGym's own variables at the tokens, then the type
+// scale. Each one is allowed to beat the file before it, and the bridge is only ahead of
+// index.css's light and accent blocks because it comes after them here. design/HANDOFF.md.
+import './tren/tokens.css'
+import './tren/fonts.css'
+import './tren/bridge.css'
+import './tren/type.css'
 import { hideBoot, handOverFromLaunchScreen } from './lib/boot.js'
 
 // App.jsx restores per-route scroll itself; the browser's own attempt races it.
