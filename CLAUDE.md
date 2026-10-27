@@ -1,6 +1,82 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Tren (this fork)
+
+**Tren is a restyled fork of openGym.** Everything below the line is openGym's own guide and is
+still accurate about the engine. This section is what is different here, and it wins where the two
+disagree.
+
+Tren is a free workout tracker for logging sets fast between rests. The design lives in `design/`
+(the handover pack: `design/HANDOFF.md` first, then `design/design-system/`). **`design/` is the
+source of truth** for every colour, size, corner, timing and word. The canvas wins on layout and
+wording, the design system on token values, the PRD on scope.
+
+### Golden rules (design/HANDOFF.md)
+
+1. **Restyle, don't rebuild.** Change how openGym looks; keep its data, sync and offline logic.
+2. **Tokens only.** Every colour, size, spacing, corner and shadow comes from a Tren token. No
+   hard-coded values in screens.
+3. **Copy is final.** Use the wording on the canvas word for word, curly apostrophes included.
+4. **States are part of the spec.** A screen is not done until its empty, loading, offline and
+   error states match the States boards.
+5. **Light and dark.** Every screen works in both, through the tokens.
+6. **Reduce motion.** With "reduce motion" on, all animation stops and changes happen instantly.
+7. **Ask, don't assume.** Anything missing goes on the open-questions list, not into the code.
+
+### Where Tren's code lives
+
+```
+design/                     the handover pack (read-only reference; never hand-edit tokens.css)
+design/boards/              board PNGs exported from the canvas — screens wait for these
+frontend/src/tren/          tokens.css, fonts.css, bridge.css, type.css, bottom-bar.css
+frontend/src/ui/tren/       the design system's React components (.tsx), verbatim
+docs/UPSTREAM.md            how to merge openGym, and every upstream file Tren has changed
+```
+
+### The five policies
+
+1. **Upstream-merge friendliness.** New Tren code goes in new files. Edits to upstream files are
+   kept to a short list, and that list is `docs/UPSTREAM.md` — add to it in the same commit.
+2. **CSS tests.** openGym has 28 tests that read `index.css` as text. Leave its token block alone
+   apart from the two deleted `--bg` lines. In Tren CSS: no `env()` (use `--sab` / `--sat`) and no
+   unguarded `color-mix()`.
+3. **i18n.** New Tren copy is wrapped in `t()` but is **not** added to the 19 locale packs. A key
+   in no pack shows its English text and passes `check-locales.mjs`, so translating later is only
+   a matter of adding keys — and nothing conflicts on a merge. v0.1 ships English.
+4. **TypeScript.** `.tsx` only under `frontend/src/ui/tren/`, byte-identical to
+   `design/design-system/components/src/` so a new drop from the designer is a `diff -r`. Where a
+   patch was unavoidable it carries a `TREN PATCH` comment and a row in `docs/UPSTREAM.md`. There
+   is no type-check step; app code stays plain JS.
+5. **Media.** The Gym visual 180 px exercise files stay unmodified, the credit line in
+   Settings → About stays word for word, and they are never sent to any AI service.
+
+### Token quick reference
+
+Names match the design system one for one (`--ink-muted`, `--radius-xl`, `--space-14`).
+
+- **Colour:** `--bg` pages · `--surface-card` cards (no borders) · `--surface-sheet` sheets ·
+  `--ink` / `--ink-muted` text · `--train-*` the monochrome primary action · `--blue-500` rest ·
+  `--green-500` done or synced · `--danger-500` destructive and errors · `--rpe-6…10` the effort
+  slider. Yellow appears **only** in the effort slider and the faint training-day glow.
+- **Type:** Inter, self-hosted. 13 · 16 · 20 · 31 · 61 · 76 · 95. Letter spacing 0 at 13,
+  −0.011em at 16, −0.017em at 20, −0.021em at 31, −0.022em at 61+. Changing numbers are tabular.
+- **Spacing:** 4 · 8 · 12 · 16 · 20 · 24 · 48 · 56 only. Screen margins 24, card padding 16,
+  gaps 8.
+- **Corners:** 12 rows · 16 inputs · 20 tiles · 24 cards and menus · 32 sheets · pill for
+  buttons, bars and circles.
+- **Motion:** presses `cubic-bezier(.32,.72,0,1)` 0.35s · morphs `cubic-bezier(.34,1.25,.64,1)`
+  0.62s · pops `cubic-bezier(.34,1.45,.64,1)` 0.35–0.5s · cross-fades opacity + 8px blur 0.32s.
+
+### Build order
+
+`design/HANDOFF.md` ends with the build order. Done so far: tokens + Inter, and the bottom bar.
+Next: Home and Live workout, then Summary and History, Routines and Add exercise, the account
+screens, You / Delete / Privacy, and Admin.
+
+---
+
 For people, the same map with diagrams is [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## What this is

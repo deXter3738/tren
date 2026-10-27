@@ -35,6 +35,9 @@ frontend/bundle-size.json
 # Local planning notes
 docs/superpowers/plans/
 
+# Conductor workspace scratch: plans, attachments, screenshots for PRs
+.context/
+
 # Python and Kotlin build leftovers (scripts/, the Android build)
 __pycache__/
 *.pyc
