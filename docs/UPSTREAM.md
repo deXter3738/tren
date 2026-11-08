@@ -52,6 +52,7 @@ Places where a Tren edit and an upstream edit can land on the same lines.
 | `frontend/src/views/Settings.jsx` | the Accent row is gone; theme falls back to `'system'` | If upstream reworks the Look page, re-apply the removal. |
 | `frontend/src/views/settings-pages.js` | the `Accent color` search entry is gone | Same. |
 | `frontend/src/index.html` | `<body class="tr">` | Keep the class. The inline script is CSP-hashed — never edit it without `web/Dockerfile`. |
+| `README.md` | rewritten as Tren's front page: openGym's badges, Discord, stores, funding, mirror, roadmap and screenshots dropped; the engine sections (architecture, sync, your data, config) kept and the credit to openGym kept | Keep Tren's README. Read upstream's diff for facts about the engine (a new `.env` variable, a changed data file, a new sync rule) and port that fact into Tren's wording. Never take upstream's hunk wholesale. |
 | `.env.example` | a `# Tren defaults` block appended at the end | Append-only; conflicts are rare. |
 | `CLAUDE.md` | a `## Tren (this fork)` section prepended, and the openGym body below it trimmed to what v0.1 touches | Keep Tren's section on top. Below it, take upstream's hunk only if it lands on a section Tren still keeps; hunks about the phone apps, the Watch, the MCP server, the website or Helm / Kubernetes / Nix are dropped again, since one pointer to `docs/ARCHITECTURE.md` stands in for all of them. |
 | `.github/workflows/` | only `test.yml` is kept | If upstream adds a workflow that publishes or mirrors, delete it. |
@@ -86,6 +87,7 @@ Keep this list complete — it is what makes a merge reviewable.
 | `frontend/src/components/ServerSync.jsx` | M4 | the no-network banner says Tren's sentence |
 | `frontend/src/components/SyncBanner.test.jsx` | M4 | the offline rows expect that sentence |
 | `frontend/src/views/Workout.swipe.test.jsx` | M4 | the delete rows expect "Set N deleted" |
+| `README.md` | M5 | repo branding (PRD R13): Tren's name, logo and status on the front page, openGym credited as the upstream it forks |
 
 ## Patches to the design system
 
@@ -139,5 +141,9 @@ so a new drop from the designer is a `diff -r`. Where that was not possible, the
   You, Delete account).
 - **openGym's seasonal decorations** (the Halloween spider and cobweb on Home) still draw. They are
   openGym's, not Tren's, and belong with the screens that hide the extra openGym features.
-- **The boot screen and the name.** `frontend/index.html` still shows openGym's dark-and-lime
-  splash and title. That is the branding swap (PRD R13), a later step.
+- **The boot screen and the in-app name.** `README.md` now says Tren (M5), but
+  `frontend/index.html` still shows openGym's dark-and-lime splash and title, and the rest of
+  the branding swap (PRD R13) is still to come: the app's own name and logo, `assets/banner.png`,
+  and the `image:` lines in `docker-compose.yml`, which still point at openGym's prebuilt images
+  (`docker compose up -d --build` is the documented way round it for now). The inherited guides
+  under `docs/` keep saying openGym on purpose: they describe upstream's engine and releases.
