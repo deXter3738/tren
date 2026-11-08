@@ -15,6 +15,7 @@ import { askAddDeviceData, menuSheet } from '../sheets.jsx'
 import { ConnectSheet, CfAccessSheet } from '../views/MobileOnboarding.jsx'
 import { passwordOn, openPasswordSignIn } from './PasswordAuth.jsx'
 import { Section, Row, Button } from './ui.jsx'
+import { offlineBanner } from '../tren/global.js'
 
 const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
@@ -76,10 +77,13 @@ export function connectionView(sync, { mobile = MOBILE, online = isOnline() } = 
         line: err.code === 'timeout' ? t('The server did not answer in time.') : t('The server cannot be reached'),
         banner: sync.pending ? t('Your server can’t be reached. Your changes are saved on this device and sync once it answers again.') : t('Your server can’t be reached. Showing the last copy synced with it.'),
       }
+      // TREN: the phone itself has no network. design/HANDOFF.md fixes this one sentence, and it
+      // is the same whether anything is waiting or not — what it has to say is that logging goes
+      // on working. The short `line` above stays openGym's: that is Settings, not the banner.
       return {
         tone: 'off', icon: 'cloudSlash', action: 'retry',
         line: err.code === 'timeout' ? t('The server did not answer in time.') : t('Offline. The server can’t be reached'),
-        banner: sync.pending ? t('Offline. Your changes are saved on this device and sync when you’re back online.') : t('Offline. Showing the last copy synced with the server.'),
+        banner: offlineBanner(),
       }
     case 'error':
       return err.code === 'bad-response'

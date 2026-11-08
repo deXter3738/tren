@@ -1,0 +1,172 @@
+/* The toast and the connection banner, in Tren.
+   -----------------------------------------------------------------------------------------------
+   openGym already has exactly the machine the handover describes: one toast at a time, a newer
+   one replacing the older, an action that can hold it longer, and a banner pinned under the
+   status bar while the connection is not right (store/useUI.js, components/Toast.jsx,
+   components/SyncBanner.jsx). None of that is rebuilt. This file is the skin: openGym's own
+   markup, wearing the design system's `.tr-toast` and Tren's tokens.
+
+   THE 16px. design/HANDOFF.md puts the toast 16px above the bottom bar. The bar's own height is
+   --tr-bar, set in bottom-bar.css where those numbers are decided, so moving the bar moves the
+   toast with it and nothing here has to know how tall it is.
+
+   NO YELLOW. openGym tinted the banner yellow. In Tren yellow belongs to the effort slider and
+   the training-day glow and nowhere else (CLAUDE.md), so the banner is a card like any other and
+   says what is wrong in words and an icon instead — never colour alone.
+
+   No env() (use --sab / --sat) and no unguarded color-mix(): CLAUDE.md, policy 2.
+   Reduce motion needs nothing here: bundle.css already stops every transition inside `.tr`. */
+
+/* ---- the toast ------------------------------------------------------------------------------ */
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tr-bar) + var(--space-4));
+  z-index: 200;
+  /* The design system's toast: flex, 52px tall, 26px corners, ink on the page's ground. */
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border-radius: 26px;
+  background: var(--ink);
+  color: var(--bg);
+  font: var(--text-body);
+  letter-spacing: -0.011em;
+  text-align: start;
+  box-shadow: var(--shadow-float);
+  /* As wide as its words, never wider than the screen margins allow. */
+  width: max-content;
+  max-width: calc(100% - var(--space-12));
+  /* Solid, so there is nothing to see through and nothing to switch off when the phone asks for
+     less transparency. The entrance is Tren's cross-fade: opacity and an 8px blur over 0.32s. */
+  opacity: 0;
+  pointer-events: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  filter: blur(8px);
+  transform: translateX(-50%);
+  transition: opacity .32s, filter .32s;
+}
+#toast.show { opacity: 1; filter: blur(0) }
+
+#toast .toast-msg { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word }
+
+/* With an action — Undo after a deleted set, Retry after a failed sync — the toast takes taps. */
+#toast.has-action { pointer-events: auto }
+#toast .toast-act {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 44px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: inherit;
+  font: var(--text-body-strong);
+  letter-spacing: -0.011em;
+  white-space: nowrap;
+}
+#toast .toast-act:active { background: var(--lens) }
+#toast .toast-act .icn { font-size: 16px }
+/* The × is at the far end from the action, so a thumb aiming for one never lands on the other
+   (components/Toast.jsx). 44px, like everything tappable. */
+#toast .toast-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-inline-start: calc(var(--space-2) * -1);
+  border-radius: var(--radius-pill);
+  color: inherit;
+  opacity: .7;
+}
+#toast .toast-x:active { background: var(--lens) }
+#toast .toast-x .icn { font-size: 15px }
+
+/* A screen with no bar under it — the workout, the sheets — keeps the same 16px, from the
+   bottom of the screen and whatever the phone's gesture bar needs. */
+body.no-tabbar #toast { bottom: calc(var(--space-4) + var(--sab)) }
+
+/* ---- the connection banner ------------------------------------------------------------------ */
+
+/* index.css still owns where it sits (fixed, under the status bar, z-index 45) and the --conn
+   height the pages read; only its surface changes. Opaque, so the blur it used to carry has
+   nothing left to do and goes — one less surface for the reduce-transparency check to argue
+   with (src/a11y-contrast-transparency.test.js). */
+.conn-bar {
+  padding: var(--sat) var(--space-6) 0;
+  background: var(--bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.conn-row { max-width: 560px; margin: 0 auto; padding: var(--space-2) 0 }
+.conn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 44px;
+  padding-block: var(--space-2);
+  padding-inline: var(--space-3) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--ink);
+  font: var(--text-caption);
+  text-align: start;
+}
+.conn .icn { flex: none; font-size: 16px; color: var(--icon-muted) }
+.conn-t { flex: 1; min-width: 0; overflow-wrap: break-word }
+.conn-a {
+  flex: none;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--ring);
+  color: var(--ink);
+  font: var(--text-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Out of reach — no network, or a server that never answered. A card, not a warning colour: the
+   sentence already says the changes are kept here. */
+.conn-bar.off .conn { background: var(--surface-card) }
+/* The server answering with a failure is the one state that takes a colour, and it takes the one
+   colour Tren keeps for things going wrong. The icon turns with it, so the colour is never
+   carrying the meaning on its own. */
+.conn-bar.bad .conn { background: var(--surface-card); box-shadow: inset 0 0 0 1px var(--danger-500) }
+.conn-bar.bad .conn .icn { color: var(--danger-500) }
+/* "No server, by choice": a phone kept local or a guest. A line, not a card. */
+.conn-bar.quiet .conn {
+  min-height: 26px;
+  padding-block: 0;
+  padding-inline: var(--space-1) 0;
+  background: none;
+  color: var(--ink-muted);
+}
+.conn-bar.quiet .conn .icn { color: var(--icon-muted) }
+.conn-bar.quiet .conn-a { background: var(--lens); color: var(--ink) }
+.conn-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  color: var(--icon-muted);
+  font-size: 12px;
+}
+.conn-x:active { background: var(--lens) }
+
+/* ---- increased contrast --------------------------------------------------------------------- */
+/* Owner, 28 Oct 2026: muted text becomes --ink, hairlines become --ring, and nothing else moves. */
+@media (prefers-contrast: more) {
+  .conn-bar.quiet .conn { color: var(--ink) }
+  .conn .icn,
+  .conn-bar.quiet .conn .icn,
+  .conn-x { color: var(--ink) }
+  #toast .toast-x { opacity: 1 }
+}
