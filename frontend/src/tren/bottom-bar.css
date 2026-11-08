@@ -13,6 +13,10 @@
    reports, and src/lib/android-system-bars.test.js keeps env() in that one file.
    No color-mix(). Safari 15.5 has none (src/color-mix-fallback.test.js). */
 
+/* How tall the whole strip is, for anything that has to sit clear of it — the toast, 16px above
+   (tren/toast.css). Kept here because this is where the numbers are decided. */
+:root { --tr-bar: calc(88px + var(--sab)) }
+
 #tabbar {
   position: fixed;
   inset-inline: 0;
@@ -103,6 +107,8 @@
     width: 520px;
     padding: 0;
   }
+  /* Floating: 56px of controls and the 16px it is lifted by, and no safe area under it. */
+  :root { --tr-bar: calc(var(--space-14) + var(--space-4)) }
   /* Floating, there is nothing behind the bar to blur: the page stops above it. */
   .tr-bottombar__blur { display: none }
 }

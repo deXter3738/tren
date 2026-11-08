@@ -50,6 +50,7 @@ import { MUSCLE_NAME } from '../lib/muscles.js'
 import FocusView from './FocusView.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { entryDbLoad, bellsIn, ownedWeightsFor, stepOwned } from '../lib/dumbbells.js'
+import { setDeletedLine, undoLabel, UNDO_MS } from '../tren/global.js'
 
 // How long after a key starts a hold the same key is not yet its "Done" (#133). A USB button
 // that bounces, or a double press, sends two presses a moment apart: the first starts the hold,
@@ -880,8 +881,12 @@ export function deleteActiveSet(idx, i, { editing = false } = {}) {
     if (editing) en.sets.splice(start, count)
     else en.sets = removeRowAt(en.sets, i)
   }, true)
-  const msg = warm ? t('Warm-up gone.') : stopped ? t('Set {0} gone. Its timer stopped too.', n) : t('Set {0} gone.', n)
-  ui.toast(msg, { action: t('Undo'), onAction: () => undoDeleteSet(token) })
+  // TREN: "Set 2 deleted" is the handover's sentence for a deleted set (design/HANDOFF.md,
+  // "Global behaviours"), with the Undo it names. The two cases the handover does not word — a
+  // warm-up, which carries no number, and a set whose rest timer went with it — keep openGym's
+  // own line; docs/UPSTREAM.md holds the question.
+  const msg = warm ? t('Warm-up gone.') : stopped ? t('Set {0} deleted. Its timer stopped too.', n) : setDeletedLine(n)
+  ui.toast(msg, { action: undoLabel(), onAction: () => undoDeleteSet(token), ms: UNDO_MS })
   return true
 }
 /** Puts a removed set back exactly as it was, at its old place in the same exercise. If the

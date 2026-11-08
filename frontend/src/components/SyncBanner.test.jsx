@@ -4,6 +4,11 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import SyncBanner, { PENDING_GRACE_MS, useConnectionTrouble } from './SyncBanner.jsx'
 import { connectionView } from './ServerSync.jsx'
+// TREN: a phone with no network gets one sentence, whether anything is waiting or not
+// (design/HANDOFF.md, "Global behaviours"). The server being out of reach while the device still
+// has a network is a different thing, and keeps openGym's own words below.
+import { offlineBanner } from '../tren/global.js'
+const OFFLINE_BANNER = offlineBanner()
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
@@ -93,7 +98,7 @@ describe('connected and in step', () => {
     render()
     expect(bar()).toBeNull()
     act(() => network(false))
-    expect(text()).toBe('Offline. Showing the last copy synced with the server.')
+    expect(text()).toBe(OFFLINE_BANNER)
     expect(bar().className).toContain('off')
     expect(label()).toBe('Try again')
     expect(connectionView(sync('ok'), { online: false }).line).toBe('Offline. The server can’t be reached')
@@ -108,16 +113,16 @@ describe('connected and in step', () => {
     render()
     expect(bar()).toBeNull()
     act(() => { vi.advanceTimersByTime(PENDING_GRACE_MS) })
-    expect(text()).toBe('Offline. Your changes are saved on this device and sync when you’re back online.')
+    expect(text()).toBe(OFFLINE_BANNER)
   })
 })
 
 describe('not connected — it says so, and what to do', () => {
-  it('offline with changes waiting: kept on this device, and a retry that reports back', async () => {
+  it('offline with changes waiting: the one no-signal line, and a retry that reports back', async () => {
     network(false)
     mocks.sync = sync('offline', { offline: true, pending: true, lastError: { status: 0, code: 'network' } })
     render()
-    expect(text()).toBe('Offline. Your changes are saved on this device and sync when you’re back online.')
+    expect(text()).toBe(OFFLINE_BANNER)
     expect(bar().className).toContain('off')
     expect(label()).toBe('Try again')
     // Its row's height is what the page and the pinned headers leave free.
@@ -127,11 +132,11 @@ describe('not connected — it says so, and what to do', () => {
     expect(mocks.toast).toHaveBeenCalledWith('Offline. The server can’t be reached')
   })
 
-  it('offline with nothing waiting: the copy on screen is the last synced one', () => {
+  it('offline with nothing waiting: the same no-signal line', () => {
     network(false)
     mocks.sync = sync('offline', { offline: true, lastError: { status: 0, code: 'timeout' } })
     render()
-    expect(text()).toBe('Offline. Showing the last copy synced with the server.')
+    expect(text()).toBe(OFFLINE_BANNER)
   })
 
   // A proxy answering 502 without a CORS header fails fetch exactly as no network does; the phone
@@ -151,7 +156,7 @@ describe('not connected — it says so, and what to do', () => {
     render()
     expect(text()).toBe('Your server can’t be reached. Showing the last copy synced with it.')
     act(() => network(false))
-    expect(text()).toBe('Offline. Showing the last copy synced with the server.')
+    expect(text()).toBe(OFFLINE_BANNER)
     act(() => network(true))
     expect(text()).toBe('Your server can’t be reached. Showing the last copy synced with it.')
   })

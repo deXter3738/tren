@@ -33,6 +33,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Modals from './components/Modals.jsx'
 import Toast from './components/Toast.jsx'
 import SyncBanner from './components/SyncBanner.jsx'
+import ConnectionWatch from './tren/ConnectionWatch.jsx'
 import RestTimer from './components/RestTimer.jsx'
 import TimerFlash from './components/TimerFlash.jsx'
 import { SeasonalLayer } from './components/Seasonal.jsx'
@@ -344,6 +345,10 @@ function Shell() {
       <RestTimer />
       <Modals />
       <Toast />
+      {/* Draws nothing: the three things the connection says for itself — the server waking up,
+          the connection coming back, a sync that has failed three times (design/HANDOFF.md,
+          "Global behaviours"). */}
+      <ConnectionWatch />
       <TimerFlash />
       {/* Seasonal decoration (lib/seasonal.js): nothing, and nothing loaded, out of season. Never
           over a running workout or the first-launch screens. */}

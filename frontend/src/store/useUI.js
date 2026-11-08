@@ -10,6 +10,7 @@ import { armRestAlert, bindNativeRest, disarmRestAlert, holdRestAlert, toneNativ
 import { useStore } from './useStore.js'
 import { REST_MAX } from '../lib/duration.js'
 import { accentValue } from '../lib/accent.js'
+import { restDoneLine, setUpAfterRest, REST_DONE_MS } from '../tren/global.js'
 
 // Fire-and-forget: lets the server push a "rest over" alert if this tab gets suspended
 // before the local timer completes. No-ops for guests / offline. The device id keeps the
@@ -194,7 +195,9 @@ const runRest = (set, get) => {
       // on reopen reads like a bug. Only the loud parts (beep, vibration, flash) are gated.
       // The native alarm is left armed: this tick can come a little early, and with the screen
       // locked it never runs at all.
-      get().toast(t('Rest’s over. Next set!'))
+      // TREN: design/HANDOFF.md names this sentence and its three seconds. The set that is up is
+      // worked out from the workout the timer belongs to (tren/global.js).
+      get().toast(restDoneLine(setUpAfterRest(useStore.getState().S?.active, tm)), { ms: REST_DONE_MS })
       if (!MOBILE) maybeRestNotification()
       cancelPushRestTimer()
       stopRestTicking()

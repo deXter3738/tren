@@ -30,7 +30,9 @@ wording, the design system on token values, the PRD on scope.
 ```
 design/                     the handover pack (read-only reference; never hand-edit tokens.css)
 design/boards/              board PNGs exported from the canvas — screens wait for these
-frontend/src/tren/          tokens.css, fonts.css, bridge.css, type.css, bottom-bar.css
+frontend/src/tren/          tokens.css, fonts.css, bridge.css, type.css, bottom-bar.css,
+                            toast.css, global.js (the global behaviours' words and numbers),
+                            ConnectionWatch.jsx
 frontend/src/ui/tren/       the design system's React components (.tsx), verbatim
 docs/UPSTREAM.md            how to merge openGym, and every upstream file Tren has changed
 ```
@@ -73,39 +75,40 @@ Names match the design system one for one (`--ink-muted`, `--radius-xl`, `--spac
 
 ### Build order
 
-`design/HANDOFF.md` ends with the build order. Done so far: tokens + Inter, and the bottom bar.
-Next: Home and Live workout, then Summary and History, Routines and Add exercise, the account
-screens, You / Delete / Privacy, and Admin.
+`design/HANDOFF.md` ends with the build order. Done so far: tokens + Inter, the bottom bar, and
+the global behaviours (the handover's eight toasts and banners, which are words and numbers, not
+layout, so they did not wait for a board).
+Next: Home and Live workout — **both need `design/boards/` 04, 05 and 06**, which are not in the
+repo yet. Then Summary and History, Routines and Add exercise, the account screens, You / Delete /
+Privacy, and Admin.
 
 ---
 
 For people, the same map with diagrams is [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+**Outside v0.1, so not described here:** the Android, iPhone and Apple Watch apps, the widgets and
+their native bridges, the MCP server, the website, and the Helm / Kubernetes / Nix deploys. They
+are mapped in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and indexed in
+[docs/README.md](docs/README.md); don't open those folders for v0.1 work.
+
 ## What this is
 
 openGym is a self-hosted gym and body-weight tracker. Two containers (`api` + `web`) plus a
-`./data` folder the user owns: no third-party account, no telemetry. Passkey (WebAuthn) login,
-installable as a PWA, and Capacitor apps for Android and iPhone (with an Apple Watch app and
-widgets) that work on their own or synced to a server. License: AGPL-3.0-or-later; the exercise
-media are licensed separately (NOTICE.md).
+`./data` folder the user owns: no third-party account, no telemetry. Passkey (WebAuthn) login and
+installable as a PWA. License: AGPL-3.0-or-later; the exercise media are licensed separately
+(NOTICE.md).
 
 ## Project layout
 
 ```
 frontend/   React 19 + Vite app (src/views, src/components, src/store, src/lib, src/sheets.jsx).
-            android/ + ios/ are the Capacitor shells (docs/MOBILE.md); ios/ also holds the watch
-            app (Watch, WatchCore, WatchWidgets), the widgets and the animation-pack downloader.
 api/        Backend: server.js (plain node:http) plus small testable modules beside it.
             coach/ is the optional AI coach; coach/core/ is shared with the phone apps.
             openapi.yaml documents every route.
 web/        Multi-stage Dockerfile (builds frontend, adds catalogue/media, serves with nginx) and
             nginx.conf.template (serves the app, proxies /api).
 catalogue/  The exercise database: exercises/<id>.json, i18n/, licensed 180 px media/.
-mcp/        Optional stdio MCP server: reads DATA_DIR, and its one write tool (log_workout)
-            saves through the api. Not in the Docker build.
 scripts/    Build, CI and release helpers (scripts/README.md).
-website/    opengym.ch, plain HTML/CSS/JS, deployed separately.
-helm/, kubernetes/, contrib/nix/   Other ways to deploy.
 docs/       Guides indexed in docs/README.md; docs/dev/ holds feature design notes.
 ```
 
@@ -124,7 +127,6 @@ cd frontend && npm test                          # vitest run, the whole suite
 cd frontend && npx vitest run src/lib/progression.test.js   # one file
 cd frontend && npx vitest run -t "some test name"           # one test by name
 cd api && npm test                               # node --test
-cd mcp && npm test
 
 # Checks CI runs besides the suites (run `npm ci` in the repo root once, for js-yaml)
 cd frontend && node scripts/check-locales.mjs && node scripts/check-source-strings.mjs --strict
@@ -132,18 +134,14 @@ node scripts/catalogue/build.mjs --check
 node scripts/build-coach-assets.mjs --check
 node scripts/build-api-docs.mjs --check
 
-# Builds
+# Build
 cd frontend && npm run build
-cd frontend && npm run build:mobile   # VITE_MOBILE build + 180 px media from catalogue/media + cap sync
 ```
 
 There is no linter/formatter config and no TypeScript; match the existing style by hand.
 
-GitHub (`github.com/DuarteSantos8/openGym`) is the home of the project; `.github/workflows/mirror.yml`
-pushes `main` and `v*` tags to the GitLab mirror (fast-forward only, never push or merge there).
-Pull requests are gated by `.github/workflows/test.yml`; `ios.yml` compiles the iPhone app on a Mac
-runner. Release packages (APK, Play bundle, App Store IPA) are built and signed on the release
-machine, never in CI (see "Exercise media" below and docs/APP_STORES.md).
+GitHub (`github.com/DuarteSantos8/openGym`) is the home of the project. Pull requests are gated by
+`.github/workflows/test.yml`.
 
 ## Architecture
 
@@ -151,9 +149,8 @@ machine, never in CI (see "Exercise media" below and docs/APP_STORES.md).
 
 - **`store/useStore.js`**: a single Zustand store holding the client-side app state (`S`),
   persisted to `localStorage` (`gym_state_v1`) and debounce-pushed to the server when signed in
-  (`pushState`, see `lib/api.js`). On the phones it is also mirrored to a file via `lib/mobile.js`
-  (`nativeSave`), since WebView storage can be evicted. `store/useUI.js` holds ephemeral UI state
-  (modals, active sheet, rest timer) separately from persisted data.
+  (`pushState`, see `lib/api.js`). `store/useUI.js` holds ephemeral UI state (modals, active
+  sheet, rest timer) separately from persisted data.
 - **`lib/`**: pure, framework-free helpers, each paired with a same-directory `*.test.js`. The
   domain logic lives here, most importantly:
   - `progression.js`: the progression-rule engine (linear, Greyskull LP, double and triple
@@ -164,12 +161,10 @@ machine, never in CI (see "Exercise media" below and docs/APP_STORES.md).
   - `workout-model.js`, `supersetFlow.js`: the in-session workout state machine.
   - `sync-merge.js`: the field-by-field merge behind the 409 retry (see "Sync" below).
   - `exercises.js` / `exercises-data.js`: the exercise library (5,632 catalogue exercises plus
-    user-defined ones). `exercises-data.js`, `instr/`, `exercise-names/` and `exercise-desc/` are
-    generated from `catalogue/` by `scripts/catalogue/build.mjs`; never edit them by hand.
+    user-defined ones). `lib/exercises-data.js` and `src/instr/`, `src/exercise-names/` and
+    `src/exercise-desc/` are generated from `catalogue/` by `scripts/catalogue/build.mjs`; they
+    are huge, never edit them by hand and never read them.
   - `api.js`: the only place that talks to the backend (`fetch` wrapper, session flows).
-  - Native bridges: `mobile.js` (the `MOBILE` flag, file persistence, notifications),
-    `channel.js` (APK or store build), `watch-sync.js`, `widgets.js`, `health-sync.js`,
-    `anim-quality.js` / `anim-packs.js` (animation sizes in the store apps).
   - CONTRIBUTING.md is explicit: **anything that decides what you lift next, or reads a logged
     session back, is a pure helper here with a unit test beside it.**
 - **Body measurements (`lib/measurements.js`, `views/Measurements.jsx`)**: one check-in per day.
@@ -186,8 +181,8 @@ machine, never in CI (see "Exercise media" below and docs/APP_STORES.md).
   import...). It is large; a new sheet can go into `components/` as its own file.
 - **`components/`**: shared UI (charts, modals, timers, media).
 - **`locales/`**: one i18n pack per language, keyed by the English string (`lib/i18n.js`,
-  `i18n-core.js`). A new `t()` string goes into every pack; pt-BR inherits from pt and has a
-  fingerprint test (`scripts/pt-br-inheritance-fingerprint.mjs`).
+  `i18n-core.js`). v0.1 is English only, so Tren adds no keys to the packs and there is no reason
+  to open them.
 
 ### API (`api/server.js`)
 
@@ -216,15 +211,6 @@ together: `lib/sync-merge.js` and `api/sync-stamps.js` (parity test), `lib/glyph
 `api/coach/core/glyphs.js` (parity test), `lib/nudge.js` and `api/nudge.js`, `lib/queue.js` and
 `api/queue.js` (mirrored test cases only, nothing compares the code). The other way round,
 `lib/coach-local.js` imports `api/coach/core/` directly so the phones run the same coach pipeline.
-
-### MCP server (`mcp/src`)
-
-Stdio MCP bridge (`@modelcontextprotocol/sdk`) that reads one user's data straight from
-`DATA_DIR`. `state.js` loads and derives the data, `tools.js` defines the read tools (zod schemas),
-`labels.js` maps keys to readable labels, `index.js` wires it together. The one write tool,
-`log_workout` (`write-tools.js`), never writes the file: it builds the workout with
-`frontend/src/lib/log-workout.js` and saves it with `PUT /api/data` over a paired-session token
-(`api-client.js`, `scripts/pair.mjs`), the way a device syncs. See `mcp/README.md`.
 
 ### Passkeys and self-hosting constraints
 
